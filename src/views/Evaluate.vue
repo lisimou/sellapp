@@ -67,11 +67,16 @@
 
 <script>
 import { getEva } from "../api/apis";
+import BScroll from "better-scroll";
+
 export default {
   data() {
     return {
       data: {}
     };
+  },
+  mounted() {
+    new BScroll(document.querySelector(".foot"));
   },
   created() {
     getEva().then(res => {
@@ -143,7 +148,8 @@ export default {
   .foot {
     padding: 20px;
     background: #fff;
-    margin-bottom: 60px;
+    height: 200px;
+    overflow: scroll;
     li {
       padding: 10px;
       border-bottom: 2px #f2f2f2 solid;

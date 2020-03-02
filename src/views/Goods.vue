@@ -17,7 +17,7 @@
     <div class="right">
       <ul class="content">
         <ul class="ul1">
-          <li :id="i" v-for="(v,i) in data" :key="i" @click="findIndex(i)">
+          <li :id="i" v-for="(v,i) in data" :key="i">
             <p class="p-name">{{v.name}}</p>
             <ul class="ul2">
               <li v-for="(food,index) in v.foods" :key="index">
@@ -26,16 +26,27 @@
                 </div>
                 <div class="li-p">
                   <p>
-                    <span>{{food.name}}</span>
+                    <span class="foodName">{{food.name}}</span>
                   </p>
                   <p>
                     <span>月销售{{food.sellCount}}</span>
                     <span>好评率{{food.rating}}%</span>
                   </p>
-                  <p>
-                    <span>￥{{food.price}}</span>
-                    <span class="old">￥{{food.oldPrice}}</span>
-                  </p>
+                  <div class="num">
+                    <div>
+                      <span class="new">￥{{food.price}}</span>
+                      <span class="old" v-show="food.oldPrice!=''">￥{{food.oldPrice}}</span>
+                    </div>
+                    <div>
+                      <Icon
+                        type="ios-remove-circle"
+                        v-show="food.num > 0"
+                        @click="decNum(i+'-'+index)"
+                      />
+                      <span v-show="food.num > 0">{{food.num}}</span>
+                      <Icon type="ios-add-circle" @click="addNum(i+'-'+index)" />
+                    </div>
+                  </div>
                 </div>
               </li>
             </ul>
@@ -53,7 +64,6 @@ import BScroll from "better-scroll";
 export default {
   data() {
     return {
-      data: {},
       newindex: 0
     };
   },
@@ -62,13 +72,53 @@ export default {
       click: true
     });
     this.rightDiv = new BScroll(document.querySelector(".right"), {
-      click: true
+      click: true,
+      probeType: 3
     });
+    this.rightDiv.on("scroll", ({ y }) => {
+      let newy = Math.abs(y);
+      for (let newobj of this.divMath) {
+        if (newy >= newobj.min && newy < newobj.max) {
+          this.newindex = newobj.index;
+          return;
+        }
+      }
+    });
+  },
+  computed: {
+    divMath() {
+      // 算法
+      let arr = [];
+      let total = 0;
+
+      for (let i = 0; i < this.data.length; i++) {
+        //当前div的高度
+        let allHeight = document.getElementById(i).offsetHeight;
+        arr.push({ min: total, max: total + allHeight, index: i });
+        total += allHeight;
+      }
+      console.log(arr);
+      return arr;
+    },
+    data() {
+      return this.$store.state.data;
+    }
   },
   created() {
     getGoods().then(res => {
-      console.log(res.data.data);
-      this.data = res.data.data;
+      // console.log(res.data.data);
+      // this.data = res.data.data;
+      for (let i = 0; i < res.data.data.length; i++) {
+        var food = res.data.data[i].foods;
+        // console.log(food);
+        // debugger
+        for (let j = 0; j < food.length; j++) {
+          var food2 = food[j];
+          food2.id = i + "-" + j;
+          console.log(food2.id);
+        }
+      }
+      this.$store.commit("initData", res.data.data);
     });
   },
   methods: {
@@ -77,8 +127,11 @@ export default {
       console.log(this.newindex);
       this.rightDiv.scrollToElement(document.getElementById(index), 600);
     },
-    findIndex(i) {
-      console.log(i);
+    addNum(id) {
+      this.$store.commit("numAdd", id);
+    },
+    decNum(id) {
+      this.$store.commit("numDec", id);
     }
   }
 };
@@ -87,11 +140,9 @@ export default {
 <style lang="less" scoped>
 #goods {
   display: flex;
-  height: 100%;
-
   .left {
     width: 100px;
-    height: 100%;
+    height: 400px;
     overflow: scroll;
     .list {
       border-bottom: 1px solid #f2f2f2;
@@ -113,7 +164,7 @@ export default {
   .right {
     flex: 1;
     overflow: scroll;
-    height: 100%;
+    height: 400px;
     li {
       list-style: none;
     }
@@ -137,8 +188,31 @@ export default {
               }
             }
             .li-p {
-              .old {
-                text-decoration: line-through;
+              width: 160px;
+              .foodName {
+                font-weight: bold;
+                color: #000;
+                font-size: 16px;
+              }
+              .num {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                div:last-of-type {
+                  font-size: 24px;
+                  color: #039ede;
+                  span {
+                    color: #93989e;
+                    font-size: 20px;
+                  }
+                }
+                .new {
+                  font-weight: bold;
+                  color: red;
+                }
+                .old {
+                  text-decoration: line-through;
+                }
               }
             }
           }
